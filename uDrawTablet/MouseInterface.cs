@@ -117,7 +117,7 @@ namespace uDrawTablet
 
     #region Declarations
 
-    private const int _MIN_PEN_PRESSURE_THRESHOLD = 0xD0;
+    private const int _MIN_PEN_PRESSURE_THRESHOLD = 0x80;
     private const int _MAX_PEN_PRESSURE_THRESHOLD = 0xFF;
     private static Options _frmOptions;
     private static System.Threading.Timer _timer = null;
@@ -582,9 +582,12 @@ namespace uDrawTablet
       {
         float tabletPadWidth = conn.Tablet is WiiInputDevice ? 1852 : 1920;
         float tabletPadHeight = conn.Tablet is WiiInputDevice ? 1340 : 1080;
-        
+
+        //TODO allow changing threshold
         double threshold = ((conn.Settings.PenPressureThreshold / 10.0) *
           (_MAX_PEN_PRESSURE_THRESHOLD - _MIN_PEN_PRESSURE_THRESHOLD)) + _MIN_PEN_PRESSURE_THRESHOLD;
+        //Console.Out.WriteLine("Threshold set: " + conn.Settings.PenPressureThreshold);
+        //Console.Out.WriteLine("Threshold is : " + threshold);
         bool penClicked = (conn.Tablet.PenPressure >= threshold);
         if (conn.LastPressure != (conn.Tablet.PenPressure >= threshold))
           _PerformAction(conn, TabletOptionButton.TabletButton.PenClick, conn.Settings.ClickAction, penClicked);
@@ -754,39 +757,27 @@ namespace uDrawTablet
           }
           else if (conn.Settings.MovementType == TabletSettings.TabletMovementType.Relative)
           {
-            //Based on last position, determine whether to move in a certain direction or not
+            //Relativet Pen Movement
+            //Based on last position, move in a certain direction
             if (conn.LastPressurePoint.HasValue)
             {
-              const int DELTA = 1;
-              int precision = conn.Settings.Precision;
-              if ((conn.Tablet.PressurePoint.X - conn.LastPressurePoint.Value.X) >= precision)
-                conn.HorizontalDelta++;
-              if ((conn.Tablet.PressurePoint.Y - conn.LastPressurePoint.Value.Y) >= precision)
-                conn.VerticalDelta++;
-              if ((conn.Tablet.PressurePoint.X - conn.LastPressurePoint.Value.X) <= -precision)
-                conn.HorizontalDelta--;
-              if ((conn.Tablet.PressurePoint.Y - conn.LastPressurePoint.Value.Y) <= -precision)
-                conn.VerticalDelta--;
+              float precision = (float)conn.Settings.Precision;
+              float dx = (conn.Tablet.PressurePoint.X - conn.LastPressurePoint.Value.X)/precision;
+              float dy = (conn.Tablet.PressurePoint.Y - conn.LastPressurePoint.Value.Y)/precision;
 
-              if (conn.VerticalDelta <= -DELTA) doUp = true;
-              if (conn.VerticalDelta >= DELTA) doDown = true;
-              if (conn.HorizontalDelta <= -DELTA) doLeft = true;
-              if (conn.HorizontalDelta >= DELTA) doRight = true;
+              mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK, (int)(dx), (int)(dy), 0, UIntPtr.Zero);
+              conn.LastPressurePoint = conn.Tablet.PressurePoint;
+
+              //Console.Out.WriteLine("Threshold raw: " + conn.Tablet.PenPressure);
             }
-
-            if (!conn.LastPressurePoint.HasValue)
-              conn.LastPressurePoint = new Point(conn.Tablet.PressurePoint.X, conn.Tablet.PressurePoint.Y);
-            if (doUp || doDown)
-              conn.LastPressurePoint = new Point(conn.LastPressurePoint.Value.X, conn.Tablet.PressurePoint.Y);
-            if (doLeft || doRight)
-              conn.LastPressurePoint = new Point(conn.Tablet.PressurePoint.X, conn.LastPressurePoint.Value.Y);
+            else
+            {
+              conn.LastPressurePoint = conn.Tablet.PressurePoint;
+            }
           }
         }
         else
           conn.LastPressurePoint = null;
-
-        if (doUp || doDown) conn.VerticalDelta = 0;
-        if (doLeft || doRight) conn.HorizontalDelta = 0;
 
         if (doUp || doDown || doLeft || doRight)
           _accel = Math.Min(conn.Settings.MovementSpeed, _accel + 2);
