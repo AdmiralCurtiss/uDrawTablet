@@ -15,7 +15,7 @@ namespace uDrawTablet
     #region Declarations
 
     private NotifyIcon _icon;
-    private ContextMenu _menu;
+    private ContextMenuStrip _menu;
     private bool _inOptions;
     private Slot[] _slots;
 
@@ -45,14 +45,14 @@ namespace uDrawTablet
           new Slot(2, lbl360_2, btnSlot2Settings), new Slot(3, lbl360_3, btnSlot3Settings),
           new Slot(4, lbl360_4, btnSlot4Settings) };
 
-      _menu = new ContextMenu();
-      _menu.MenuItems.Add("Options...", OnOptionsClick);
-      _menu.MenuItems.Add("Exit", OnExit);
+      _menu = new ContextMenuStrip();
+      _menu.Items.Add(new ToolStripMenuItem("Options...", null, OnOptionsClick));
+      _menu.Items.Add(new ToolStripMenuItem("Exit", null, OnExit));
 
       _icon = new NotifyIcon();
       _icon.Text = Assembly.GetExecutingAssembly().GetName().Name;
       _icon.Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
-      _icon.ContextMenu = _menu;
+      _icon.ContextMenuStrip = _menu;
       _icon.Visible = true;
       _icon.DoubleClick += _icon_DoubleClick;
 
