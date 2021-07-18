@@ -352,7 +352,8 @@ namespace uDrawLib
     {
       try
       {
-        _stream.Close();
+        if (_stream != null)
+          _stream.Close();
       }
       catch
       {
